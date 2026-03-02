@@ -1,0 +1,24 @@
+{
+  "name": "sliderbackend",
+  "version": "1.0.0",
+  "description": "Backend para cadastro de slides",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js"
+  },
+  "author": "Claudio",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1000.0",
+    "body-parser": "^2.2.2",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "mongoose": "^9.2.2",
+    "multer": "^2.0.2",
+    "nodemon": "^3.1.14",
+    "uuidv4": "^6.2.13",
+    "zod": "^4.3.6"
+  }
+}
