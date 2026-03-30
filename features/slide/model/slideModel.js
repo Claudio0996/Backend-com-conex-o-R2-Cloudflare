@@ -2,6 +2,10 @@ const { Schema, model } = require("mongoose");
 
 const slideSchema = new Schema(
   {
+    title: {
+      type: String,
+      required: true,
+    },
     mediaUrl: {
       type: String,
       required: true,
@@ -9,7 +13,7 @@ const slideSchema = new Schema(
     mediaType: {
       type: String,
       required: true,
-      enum: ["image", "video"],
+      enum: ["image", "video", "gif"],
     },
     isEnabled: {
       type: Boolean,

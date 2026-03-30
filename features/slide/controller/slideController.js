@@ -1,4 +1,3 @@
-const { success } = require("zod");
 const uploadService = require("../../upload/uploadService");
 const slideService = require("../service/slideService");
 
@@ -13,7 +12,7 @@ exports.createSlide = async (req, res, next) => {
   try {
     const url = await uploadService.upload({ buffer: file.buffer, type: file.mimetype });
 
-    const slide = await slideService.createSlide({ ...body, mediaUrl: url, isEnabled: !!body.isEnabled });
+    const slide = await slideService.createSlide({ ...body, mediaUrl: url, isEnabled: true });
 
     res.status(201).json({
       message: "Slide criado com sucesso",

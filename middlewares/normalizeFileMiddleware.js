@@ -2,7 +2,7 @@ const multer = require("multer");
 
 const dataStorage = multer.memoryStorage();
 
-const acceptedMimetypes = ["image/jpeg", "image/png", "video/mp4"];
+const acceptedMimetypes = ["image/jpeg", "image/jpg", "video/mp4"];
 
 const upload = multer({
   storage: dataStorage,
@@ -18,4 +18,4 @@ const upload = multer({
   },
 });
 
-module.exports = upload.single("file");
+module.exports = upload.single("image");

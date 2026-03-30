@@ -2,8 +2,9 @@ const zod = require("zod");
 
 const SlideSchema = zod
   .object({
+    title: zod.string().min(5, "Título muito pequeno"),
     mediaUrl: zod.string().min(10, "URL inválida"),
-    mediaType: zod.enum(["image", "video"], "Formato de arquivo inválido"),
+    mediaType: zod.enum(["image", "video", "gif"], "Formato de arquivo inválido"),
     isEnabled: zod.boolean().optional(),
     startAt: zod.coerce.date("Formato de data inválida"),
     endAt: zod.coerce.date("Formato de data inválida"),
