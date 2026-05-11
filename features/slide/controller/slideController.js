@@ -1,4 +1,4 @@
-const uploadService = require("../../upload/uploadService");
+const storageService = require("../../../core/storage/storageService");
 const slideService = require("../service/slideService");
 
 exports.createSlide = async (req, res, next) => {
@@ -6,11 +6,13 @@ exports.createSlide = async (req, res, next) => {
   const body = req.body;
 
   if (!file) {
-    return res.status(400).json({ message: "Não foi enviado um arquivo" });
+    const error = new Error("Não foi enviado um arquivo");
+    error.status = 400;
+    return next(error);
   }
 
   try {
-    const url = await uploadService.upload({ buffer: file.buffer, type: file.mimetype });
+    const url = await storageService.createSlide({ buffer: file.buffer, type: file.mimetype });
 
     const slide = await slideService.createSlide({ ...body, mediaUrl: url, isEnabled: true });
 
@@ -20,12 +22,7 @@ exports.createSlide = async (req, res, next) => {
       success: true,
     });
   } catch (err) {
-    console.log(err);
-    res.status(err.status || 500).json({
-      message: err.message || "Erro ao inserir slide",
-      success: false,
-      data: null,
-    });
+    next(err);
   }
 };
 
@@ -39,12 +36,7 @@ exports.getSlides = async (req, res, next) => {
       data: slides,
     });
   } catch (err) {
-    console.log(err);
-    res.status(err.status || 500).json({
-      message: err.message || "Erro ao encontrar slides",
-      success: false,
-      data: null,
-    });
+    next(err);
   }
 };
 
@@ -59,12 +51,7 @@ exports.getActiveSlides = async (req, res, next) => {
       data: activeSlides,
     });
   } catch (err) {
-    console.log(err);
-    res.status(err.status || 500).json({
-      message: err.message || "Erro ao encontrar slides",
-      success: false,
-      data: null,
-    });
+    next(err);
   }
 };
 
@@ -81,12 +68,7 @@ exports.updateSlide = async (req, res, next) => {
       data: newSlide,
     });
   } catch (err) {
-    console.log(err);
-    res.status(err.status || 500).json({
-      message: err.message || "Erro ao encontrar slides",
-      success: false,
-      data: null,
-    });
+    next(err);
   }
 };
 
@@ -96,9 +78,9 @@ exports.deleteSlide = async (req, res, next) => {
   try {
     const existingSlide = await slideService.getSlideById(id);
 
-    await uploadService.delete(existingSlide.mediaUrl.split("/").pop());
+    await storageService.deleteSlide({ existingSlide });
 
-    const deletedSlide = await slideService.deleteSlide(id);
+    const deletedSlide = await slideService.deleteSlide(existingSlide._id);
 
     res.status(201).json({
       success: true,
@@ -106,11 +88,6 @@ exports.deleteSlide = async (req, res, next) => {
       data: deletedSlide,
     });
   } catch (err) {
-    console.log(err);
-    res.status(err.status || 500).json({
-      message: err.message || "Erro ao encontrar slides",
-      success: false,
-      data: null,
-    });
+    next(err);
   }
 };

@@ -1,53 +1,58 @@
-# Slider Backend
+# OF TV — Backend
 
-Backend em Node.js para cadastro, gerenciamento e exibição de **slides** (imagens ou vídeos), com armazenamento de arquivos na Cloudflare R2 e dados no MongoDB.  
-
-Permite criar, listar, atualizar, excluir e obter apenas os slides ativos de acordo com período de exibição e status.
+Backend em Node.js para gerenciamento de **slides de mídia** e **autenticação de usuários**, com armazenamento de arquivos na Cloudflare R2 e dados no MongoDB.
 
 ---
 
 ## Tecnologias
 
-- **Node.js** + **Express**
-- **MongoDB** + **Mongoose**
-- **Cloudflare R2** (`@aws-sdk/client-s3` com endpoint R2)
-- **Multer** (upload em memória)
-- **Zod** (validação de dados)
-- **dotenv** (variáveis de ambiente)
-- **cors**, **body-parser**, **cookie-parser**
+| Pacote | Uso |
+|---|---|
+| **Express 5** | Servidor HTTP e roteamento |
+| **MongoDB + Mongoose** | Banco de dados principal |
+| **Zod** | Validação de dados de entrada |
+| **jsonwebtoken** | Access tokens (JWT) |
+| **bcrypt** | Hash de senhas |
+| **cookie-parser** | Leitura de cookies httpOnly |
+| **Multer** | Upload de arquivos em memória |
+| **@aws-sdk/client-s3** | Upload para Cloudflare R2 |
+| **dotenv** | Variáveis de ambiente |
 
 ---
 
 ## Pré-requisitos
 
-- **Node.js** 18+ instalado
-- Acesso a um banco **MongoDB** (local ou em nuvem)
-- Conta e bucket configurados na **Cloudflare R2**
+- Node.js 18+
+- Banco MongoDB (local ou em nuvem)
+- Conta e bucket configurados na Cloudflare R2
 
 ---
 
 ## Instalação
 
 ```bash
-# Clonar o repositório
 git clone <URL_DO_REPOSITORIO>
 cd "OF TV"
-
-# Instalar dependências
 npm install
 ```
 
-Crie um arquivo `.env` na raiz do projeto com as variáveis necessárias (exemplo):
+Crie um arquivo `.env` na raiz com as variáveis abaixo:
 
 ```env
 PORT=3000
-MONGO_URI=mongodb://localhost:27017/sliderbackend
+MONGO_URI=mongodb://localhost:27017/oftvdb
 
-R2_ACCOUNT_ID=SEU_ACCOUNT_ID
-R2_ACCESS_KEY_ID=SUA_ACCESS_KEY
-R2_SECRET_ACCESS_KEY=SUA_SECRET_KEY
-R2_BUCKET_NAME=nome-do-bucket
-R2_PUBLIC_URL=https://seu-dominio-r2.com
+JWT_SECRET=
+REFRESH_TOKEN_TTL_MS=604800000
+
+PEPPER=
+ROUND_ENCRYPTION=12
+
+R2_ACCOUNT_ID=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_BUCKET_NAME=
+R2_PUBLIC_URL=
 ```
 
 ---
@@ -58,143 +63,35 @@ R2_PUBLIC_URL=https://seu-dominio-r2.com
 npm run dev
 ```
 
-O servidor será iniciado usando o `index.js`, que carrega o `app.js` e chama `startServer` em `server.js`, conectando ao MongoDB e ouvindo na porta definida em `PORT`.
-
 ---
 
 ## Endpoints
 
-Todos os endpoints estão definidos em `features/slide/routes/slideRoute.js` e montados diretamente no `app`.
+### Autenticação
 
-### 1. Listar todos os slides
+| Método | Rota | Autenticado | Descrição |
+|---|---|---|---|
+| POST | `/auth/register` | Não | Cadastro de usuário |
+| POST | `/auth/login` | Não | Login |
+| POST | `/auth/refresh` | Não | Renovar access token via cookie |
 
-- **GET** `/slides`
-- **Resposta 200**:
+### Slides
 
-```json
-{
-  "success": true,
-  "message": "Slides retornados com sucesso",
-  "data": [
-    {
-      "_id": "...",
-      "mediaUrl": "https://...",
-      "mediaType": "image",
-      "isEnabled": true,
-      "startAt": "2024-01-01T00:00:00.000Z",
-      "endAt": "2024-01-31T23:59:59.000Z",
-      "status": "active"
-    }
-  ]
-}
+| Método | Rota | Autenticado | Descrição |
+|---|---|---|---|
+| GET | `/slides` | Sim | Listar todos os slides |
+| GET | `/active-slides` | Não | Listar slides ativos no momento |
+| POST | `/slide` | Sim | Criar slide (multipart/form-data) |
+| PUT | `/slide/:id` | Sim | Atualizar slide |
+| DELETE | `/slide/:id` | Sim | Excluir slide |
+
+Rotas autenticadas exigem o header:
 ```
-
-### 2. Listar slides ativos
-
-- **GET** `/active-slides`
-- Retorna apenas slides:
-  - com `isEnabled = true`
-  - `startAt <= agora`
-  - `endAt >= agora`
-
-### 3. Criar slide
-
-- **POST** `/slide`
-- **Body (multipart/form-data)**:
-  - `file`: arquivo (campo único) – aceita `image/jpeg`, `image/png`, `video/mp4`
-  - `mediaType`: `"image"` ou `"video"`
-  - `startAt`: data inicial (`string`, parseada para `Date`)
-  - `endAt`: data final (`string`, parseada para `Date`)
-  - `isEnabled` (opcional): `true` ou `false`
-
-Exemplo (pseudo):
-
-- `Content-Type: multipart/form-data`
-- Campos:
-  - `file`: `banner.jpg`
-  - `mediaType`: `image`
-  - `startAt`: `2024-03-01T00:00:00.000Z`
-  - `endAt`: `2024-03-31T23:59:59.000Z`
-  - `isEnabled`: `true`
-
-Validação feita via `SlideSchema` (`zod`):
-
-- `mediaUrl`: string com mínimo de 10 caracteres (preenchida internamente após upload)
-- `mediaType`: `image` | `video`
-- `startAt` e `endAt`: datas válidas
-- `startAt` não pode ser maior que `endAt`
-
-### 4. Atualizar slide
-
-- **PUT** `/slide/:id`
-- **Body (JSON)**:
-  - Qualquer campo do slide que você queira atualizar (`mediaType`, `isEnabled`, `startAt`, `endAt`, etc.)
-- Verifica se o slide existe antes de atualizar, senão retorna erro 404.
-
-### 5. Excluir slide
-
-- **DELETE** `/slide/:id`
-- Fluxo:
-  1. Busca o slide pelo `id`
-  2. Remove o arquivo correspondente na R2 (usando a última parte da URL como `key`)
-  3. Apaga o registro no MongoDB
-
----
-
-## Estrutura do Projeto (resumo)
-
-```text
-.
-├── app.js
-├── index.js
-├── server.js
-├── config
-│   └── db.js
-├── features
-│   ├── slide
-│   │   ├── controller
-│   │   │   └── slideController.js
-│   │   ├── model
-│   │   │   └── slideModel.js
-│   │   ├── repository
-│   │   │   └── slideRepository.js
-│   │   ├── routes
-│   │   │   └── slideRoute.js
-│   │   └── schema
-│   │       └── slideSchema.js
-│   └── upload
-│       └── uploadService.js
-├── middlewares
-│   └── normalizeFileMiddleware.js
-├── package.json
-└── .gitignore
+Authorization: Bearer <access_token>
 ```
-
----
-
-## Tratamento de Erros
-
-As ações de criação, listagem, atualização, exclusão e upload retornam respostas padronizadas:
-
-- `success`: `true` ou `false`
-- `message`: descrição do que ocorreu
-- `data`: dados da operação (ou `null` em caso de erro)
-
-Erros comuns:
-
-- **400**: erro de validação (por exemplo, datas inválidas, `startAt > endAt`, URL inválida)
-- **404**: slide não encontrado ou arquivo não enviado
-- **500**: erros internos (banco, R2, etc.)
-
----
-
-## Licença
-
-Projeto licenciado sob **ISC** (definido em `package.json`).
 
 ---
 
 ## Autor
 
-- **Claudio**
-
+**Claudio** — cvsilva391@gmail.com

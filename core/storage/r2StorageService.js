@@ -52,7 +52,7 @@ exports.delete = async (key) => {
     console.log(err);
     throw {
       status: 500,
-      message: "Erro ao inserir arquivo no servidor",
+      message: "Erro ao excluir arquivo do servidor",
     };
   }
 };
