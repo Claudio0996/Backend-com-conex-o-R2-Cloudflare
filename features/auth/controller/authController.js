@@ -4,7 +4,6 @@ const { sendRefreshCookie } = require("../../../core/httpOnlyCookies");
 
 exports.loginUser = async (req, res, next) => {
   const userData = req.body;
-  console.log(userData);
 
   try {
     const validatedData = loginSchema.safeParse(userData);
@@ -18,7 +17,7 @@ exports.loginUser = async (req, res, next) => {
       throw error;
     }
 
-    console.log(validatedData);
+
     const data = await authService.loginUser({
       email: validatedData.data.email,
       password: validatedData.data.password,

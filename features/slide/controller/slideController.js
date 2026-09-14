@@ -61,7 +61,7 @@ exports.updateSlide = async (req, res, next) => {
 
   try {
     const newSlide = await slideService.updateSlide({ id, ...newData });
-
+    
     res.status(201).json({
       success: true,
       message: "Slide atualizado com sucesso",

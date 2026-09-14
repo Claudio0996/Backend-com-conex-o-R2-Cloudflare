@@ -1,5 +1,4 @@
 const { hashPassword } = require("../../security/services/passwordService");
-const { existingUser } = require("../../../core/ErrorObjects");
 const User = require("../repositories/userRepository");
 
 exports.createUser = async ({ userName, email, password }) => {
