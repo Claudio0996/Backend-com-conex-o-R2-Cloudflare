@@ -15,7 +15,7 @@ app.use("/uploads", express.static("uploads"));
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: ["https://front-end-of-tv.pages.dev", "https://localhost:5173"],
     methods: ["GET", "POST", "DELETE", "PATCH", "PUT"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
