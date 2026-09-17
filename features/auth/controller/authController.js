@@ -1,6 +1,44 @@
 const authService = require("../services/authService");
-const { loginSchema } = require("../../user/schemas/userSchema");
+const { registerSchema, loginSchema } = require("../../user/schemas/userSchema");
 const { sendRefreshCookie } = require("../../../core/httpOnlyCookies");
+
+exports.registerUser = async (req, res, next) => {
+  const userData = req.body;
+
+  try {
+    const validatedData = registerSchema.safeParse(userData);
+    if (!validatedData.success) {
+      const errors = validatedData.error.issues.map((issue) => issue.message);
+
+      const error = {
+        message: errors,
+        status: 400,
+      };
+      throw error;
+    }
+
+    const data = await authService.registerUser({
+      userName: validatedData.data.userName,
+      email: validatedData.data.email,
+      password: validatedData.data.password,
+    });
+
+    sendRefreshCookie(res, data.refreshToken, data.expiration);
+    const { user, token } = data;
+
+    res.status(201).json({
+      success: true,
+      data: {
+        user,
+        token,
+      },
+      message: "Usuário cadastrado com sucesso",
+    });
+  } catch (err) {
+    console.log(`[Register Controller Error]: ${err.message}`);
+    next(err);
+  }
+};
 
 exports.loginUser = async (req, res, next) => {
   const userData = req.body;

@@ -1,10 +1,11 @@
 const { hashPassword } = require("../../security/services/passwordService");
 const User = require("../repositories/userRepository");
+const { existingUser } = require("../../../core/ErrorObjects");
 
 exports.createUser = async ({ userName, email, password }) => {
-  const existingUser = await User.findUserByEmail({ email });
+  const foundUser = await User.findUserByEmail({ email });
 
-  if (existingUser) {
+  if (foundUser) {
     const error = existingUser();
     throw error;
   }
